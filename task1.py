@@ -25,8 +25,26 @@ st.sidebar.header("Dataset Ingestion")
 uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
 
 if uploaded_file is not None:
-   # Read dataset
-   df = pd.read_csv(uploaded_file)
+   if not uploaded_file.name.lower().endswith(".csv"):
+       st.error("Please upload a file with a .csv extension.")
+       st.stop()
+
+   # Read and validate the uploaded dataset.
+   try:
+       df = pd.read_csv(uploaded_file)
+   except pd.errors.EmptyDataError:
+       st.error("The uploaded CSV file is empty.")
+       st.stop()
+   except pd.errors.ParserError:
+       st.error("The uploaded file is not a valid CSV.")
+       st.stop()
+   except UnicodeDecodeError:
+       st.error("The CSV file must use UTF-8 text encoding.")
+       st.stop()
+
+   if df.empty or len(df.columns) == 0:
+       st.error("The CSV file does not contain any data.")
+       st.stop()
 
    # 3. Dataset Overview
 
@@ -55,8 +73,19 @@ if uploaded_file is not None:
 
    # Basic statistics for numerical columns
    st.write("**Basic Numerical Statistics:**")
-   #display the basic statistics
-   st.dataframe(df.describe())
+   numeric_columns = df.select_dtypes(include="number").columns
+   if len(numeric_columns) > 0:
+       numeric_summary = pd.DataFrame(
+           {
+               "Mean": df[numeric_columns].mean(),
+               "Median": df[numeric_columns].median(),
+               "Minimum": df[numeric_columns].min(),
+               "Maximum": df[numeric_columns].max(),
+           }
+       )
+       st.dataframe(numeric_summary)
+   else:
+       st.info("No numerical attributes are available for statistical summary.")
 
     
    # 4. Attribute Selection
@@ -85,7 +114,8 @@ if uploaded_file is not None:
        # Bar chart for categorical
        fig, ax = plt.subplots()
        value_counts = df[selected_column].value_counts(dropna=False).head(20)
-       sns.barplot(x=value_counts.values, y=value_counts.index.astype(str), ax=ax)
+       labels = value_counts.index.astype(str)
+       sns.barplot(x=value_counts.values, y=labels, ax=ax)
        ax.set_title(f"Value Counts for {selected_column}")
        ax.set_xlabel("Count")
        ax.set_ylabel(selected_column)
