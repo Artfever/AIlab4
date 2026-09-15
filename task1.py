@@ -113,7 +113,7 @@ if uploaded_file is not None:
    else:
        # Bar chart for categorical
        fig, ax = plt.subplots()
-       value_counts = df[selected_column].value_counts(dropna=False).head(20)
+       value_counts = df[selected_column].value_counts(dropna=False).head(400)
        labels = value_counts.index.astype(str)
        sns.barplot(x=value_counts.values, y=labels, ax=ax)
        ax.set_title(f"Value Counts for {selected_column}")
